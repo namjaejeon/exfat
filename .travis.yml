@@ -81,8 +81,8 @@ script:
  - sudo umount /mnt/full_test/
  - sudo fsck.exfat /dev/loop22
  # run xfstests test
- - truncate -s 100G test.img
- - truncate -s 100G scratch.img
+ - truncate -s 16G test.img
+ - truncate -s 16G scratch.img
  - sudo losetup /dev/loop20 test.img
  - sudo losetup /dev/loop21 scratch.img
  - sudo mkfs.exfat /dev/loop20
