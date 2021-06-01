@@ -73,10 +73,10 @@ static int exfat_d_revalidate(struct dentry *dentry, unsigned int flags)
 	return ret;
 }
 
-/* returns the length of a struct qstr, ignoring trailing dots */
+/* returns the length of a struct qstr, ignoring trailing dots and spaces */
 static unsigned int exfat_striptail_len(unsigned int len, const char *name)
 {
-	while (len && name[len - 1] == '.')
+	while (len && (name[len - 1] == '.' || name[len - 1] == ' '))
 		len--;
 	return len;
 }
@@ -445,7 +445,7 @@ static int __exfat_resolve_path(struct inode *inode, const unsigned char *path,
 	struct exfat_sb_info *sbi = EXFAT_SB(sb);
 	struct exfat_inode_info *ei = EXFAT_I(inode);
 
-	/* strip all trailing periods */
+	/* strip all trailing periods and spaces */
 	namelen = exfat_striptail_len(strlen(path), path);
 	if (!namelen)
 		return -ENOENT;
