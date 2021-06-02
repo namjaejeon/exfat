@@ -91,6 +91,7 @@ static int exfat_readdir(struct inode *inode, loff_t *cpos, struct exfat_dir_ent
 	clu_offset = dentry >> dentries_per_clu_bits;
 	exfat_chain_dup(&clu, &dir);
 
+	pr_err("1 clu_offset : %u, clu.dir : %u\n", clu_offset, clu.dir);
 	if (clu.flags == ALLOC_NO_FAT_CHAIN) {
 		clu.dir += clu_offset;
 		clu.size -= clu_offset;
@@ -109,22 +110,28 @@ static int exfat_readdir(struct inode *inode, loff_t *cpos, struct exfat_dir_ent
 			clu_offset--;
 		}
 	}
+	pr_err("2 clu_offset : %u, clu.dir : %u\n", clu_offset, clu.dir);
 
 	while (clu.dir != EXFAT_EOF_CLUSTER) {
 		i = dentry & (dentries_per_clu - 1);
 
 		for ( ; i < dentries_per_clu; i++, dentry++) {
 			ep = exfat_get_dentry(sb, &clu, i, &bh, &sector);
-			if (!ep)
+			if (!ep) {
+				pr_err("entry load failed\n");
 				return -EIO;
+			}
 
 			type = exfat_get_entry_type(ep);
+			pr_err("type : %x\n", type);
 			if (type == TYPE_UNUSED) {
 				brelse(bh);
+				pr_err("type is unused type\n");
 				break;
 			}
 
 			if (type != TYPE_FILE && type != TYPE_DIR) {
+				pr_err("type is not file or dir\n");
 				brelse(bh);
 				continue;
 			}
@@ -153,15 +160,19 @@ static int exfat_readdir(struct inode *inode, loff_t *cpos, struct exfat_dir_ent
 			exfat_utf16_to_nls(sb, &uni_name,
 				dir_entry->namebuf.lfn,
 				dir_entry->namebuf.lfnbuf_len);
+			pr_err("filename : %s\n", dir_entry->namebuf.lfn);
 			brelse(bh);
 
 			ep = exfat_get_dentry(sb, &clu, i + 1, &bh, NULL);
-			if (!ep)
+			if (!ep) {
+				pr_err("stream entry load failed\n");
 				return -EIO;
+			}
 			dir_entry->size =
 				le64_to_cpu(ep->dentry.stream.valid_size);
 			dir_entry->entry = dentry;
 			brelse(bh);
+			pr_err("dir_entry->size : %lld\n", dir_entry->size);
 
 			ei->hint_bmap.off = dentry >> dentries_per_clu_bits;
 			ei->hint_bmap.clu = clu.dir;
